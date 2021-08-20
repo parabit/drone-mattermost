@@ -58,7 +58,7 @@ func (p *Plugin) CreatePost(pipeline drone.Pipeline, network drone.Network) erro
 	// build message
 	ref := pipeline.Build.Tag
 	if pipeline.Commit.SHA != "" {
-		ref = pipeline.Commit.SHA[:8]
+		ref = pipeline.Commit.SHA[:7]
 	}
 	message := fmt.Sprintf(
 		"# Push `%s/%s:%s`\nPipeline for [branch `%s` by `%s`](%s): **%s**!",
