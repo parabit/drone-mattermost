@@ -12,6 +12,7 @@ pushd $SRC &> /dev/null
   CGO_ENABLED=0 \
     go build .
   docker build -t kenshaw/drone-mattermost:latest .
+  docker push kenshaw/drone-mattermost:latest
 )
 
 popd &> /dev/null
