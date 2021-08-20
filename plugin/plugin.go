@@ -116,8 +116,8 @@ func (p *Plugin) CreatePost(pipeline drone.Pipeline, network drone.Network) erro
 	switch {
 	case res.Error != nil:
 		return res.Error
-	case res.StatusCode != http.StatusOK:
-		return fmt.Errorf("could not create post: status code (%d) != 200", res.StatusCode)
+	case res.StatusCode != http.StatusCreated:
+		return fmt.Errorf("could not create post: status code (%d) != 201", res.StatusCode)
 	}
 	return nil
 }
