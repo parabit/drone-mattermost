@@ -16,8 +16,13 @@
 package plugin
 
 import (
+	_ "embed"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/drone-plugins/drone-plugin-lib/drone"
+	"github.com/flowchartsman/handlebars/v3"
 )
 
 func TestToDuration(t *testing.T) {
@@ -88,3 +93,47 @@ func TestRegexReplace(t *testing.T) {
 		t.Errorf("error, expected %s, got %s", expected, actual)
 	}
 }
+
+func TestRender(t *testing.T) {
+	s, err := handlebars.Render(string(testTpl), testPipeline())
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	t.Logf(">>>\n%s\n<<<", strings.TrimSpace(s))
+}
+
+func testPipeline() drone.Pipeline {
+	return drone.Pipeline{
+		Repo: drone.Repo{
+			Owner: "octocat",
+			Name:  "hello-world",
+		},
+		Build: drone.Build{
+			Tag:      "1.0.0",
+			Event:    "push",
+			Number:   1,
+			Branch:   "master",
+			DeployTo: "",
+			Status:   "success",
+			Link:     "http://github.com/octocat/hello-world",
+			Started:  time.Unix(1546340400, 0), // 2019-01-01 12:00:00
+			Created:  time.Unix(1546340400, 0), // 2019-01-01 12:00:00
+		},
+		Commit: drone.Commit{
+			SHA:     "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+			Ref:     "",
+			Branch:  "master",
+			Link:    "https://github.com/octocat/hello-world/compare/0000000...7fd1a60b01f91b31",
+			Message: drone.ParseMessage("Initial commit\n\nMessage body line1\nmessage body line 2"),
+			Author: drone.Author{
+				Username: "octocat",
+				Name:     "The Octocat",
+				Email:    "octocat@github.com",
+				Avatar:   "https://avatars0.githubusercontent.com/u/583231?s=460&v=4",
+			},
+		},
+	}
+}
+
+//go:embed test.tpl
+var testTpl []byte
