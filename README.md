@@ -19,11 +19,15 @@ steps:
     team: dev
     channel: town-square
     template: |-
-      # Push `{{repo.name}}@{{build.branch}}`
-      Build [{{repo.name}}]({{build.link}}) deployment {{#success build.status}}succeeded{{else}}**failed!**{{/success}}
+      # {{uppercase (regexReplace "^master$" build.branch "staging")}} deployed
+      **Successfully** deployed {{repo.owner}}/{{repo.name}} [`{{build.branch}}@{{truncate commit 7}}`]({{build.link}}) -> https://<URL> [[diff]({{commit.link}})]
+      Author: `{{commit.author.username}}`
+      > {{commit.message.title}}{{#if commit.message.body}}
+      >
+      {{{regexReplace "(?m)^" commit.message.body "> "}}}{{/if}}
   when:
     event: push
-    status: [success, failure]
+    status: [success]
     branch: [master, production]
 ```
 
