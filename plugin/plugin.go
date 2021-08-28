@@ -1,8 +1,10 @@
 package plugin
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/drone-plugins/drone-plugin-lib/drone"
@@ -21,11 +23,17 @@ type Plugin struct {
 	Team     string
 	Channel  string
 	Template string
+	Replace  string
+	replacer func(string) string
 }
 
 // New creates the drone mattermost plugin.
 func New() *Plugin {
-	return new(Plugin)
+	return &Plugin{
+		replacer: func(s string) string {
+			return s
+		},
+	}
 }
 
 // Run is the cli run entry.
@@ -49,8 +57,44 @@ func (p *Plugin) Execute(ctx *cli.Context) error {
 	if p.Team == "" || p.Channel == "" {
 		return ErrMissingTeamOrChannel
 	}
+	if err := p.BuildReplacer(); err != nil {
+		return err
+	}
 	// execute
 	return p.CreatePost(urfave.PipelineFromContext(ctx), urfave.NetworkFromContext(ctx))
+}
+
+// BuildReplacer builds a replacer.
+func (p *Plugin) BuildReplacer() error {
+	if p.Replace == "" {
+		return nil
+	}
+	var replace []struct {
+		Regexp  string         `json:"regexp,omitempty"`
+		Replace string         `json:"replace,omitempty"`
+		RE      *regexp.Regexp `json:"-"`
+	}
+	// unmarshal json
+	d := json.NewDecoder(strings.NewReader(p.Replace))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&replace); err != nil {
+		return fmt.Errorf("unable to unmarshal replace from json: %v", err)
+	}
+	// compile
+	for i := 0; i < len(replace); i++ {
+		var err error
+		if replace[i].RE, err = regexp.Compile(replace[i].Regexp); err != nil {
+			return fmt.Errorf("unable to compile regexp %d (%q): %v", i, replace[i].Regexp, err)
+		}
+	}
+	// set replacer
+	p.replacer = func(s string) string {
+		for i := 0; i < len(replace); i++ {
+			s = replace[i].RE.ReplaceAllString(s, replace[i].Replace)
+		}
+		return s
+	}
+	return nil
 }
 
 // CreatePost creates the post.
@@ -154,6 +198,12 @@ func (p *Plugin) Flags() []cli.Flag {
 			Usage:       "mattermost template",
 			EnvVars:     []string{"MATTERMOST_TEMPLATE", "PLUGIN_TEMPLATE"},
 			Destination: &p.Template,
+		},
+		&cli.StringFlag{
+			Name:        "mattermost.replace",
+			Usage:       "mattermost replace",
+			EnvVars:     []string{"MATTERMOST_REPLACE", "PLUGIN_REPLACE"},
+			Destination: &p.Replace,
 		},
 	}
 	return append(flags, urfave.Flags()...)
