@@ -29,11 +29,7 @@ type Plugin struct {
 
 // New creates the drone mattermost plugin.
 func New() *Plugin {
-	return &Plugin{
-		replacer: func(s string) string {
-			return s
-		},
-	}
+	return new(Plugin)
 }
 
 // Run is the cli run entry.
@@ -99,39 +95,35 @@ func (p *Plugin) BuildReplacer() error {
 
 // CreatePost creates the post.
 func (p *Plugin) CreatePost(pipeline drone.Pipeline, network drone.Network) error {
-	// build message
-	ref := pipeline.Build.Tag
-	if pipeline.Commit.SHA != "" {
-		ref = pipeline.Commit.SHA[:7]
+	// replace
+	if p.replacer != nil {
+		pipeline.Commit.Message.Title = p.replacer(pipeline.Commit.Message.Title)
+		pipeline.Commit.Message.Body = p.replacer(pipeline.Commit.Message.Body)
 	}
-	message := fmt.Sprintf(
-		"# Push `%s/%s:%s`\nPipeline for [branch `%s` by `%s`](%s): **%s**!",
-		pipeline.Repo.Owner,
-		pipeline.Repo.Name,
-		ref,
-		pipeline.Commit.Branch,
-		pipeline.Commit.Author,
-		pipeline.Build.Link,
-		pipeline.Build.Status,
-	)
+	// template
+	template :=
+		"# Push `{{repo.owner}}/{{repo.name}}:{{truncate commit 7}}`\n" +
+			"Pipeline for [branch `{{commit.branch}}` by `{{commit.author}}`]({{build.link}}): **{{build.status}}**!\n" +
+			"> {{commit.message.title}}{{#if commit.message.body}}\n" +
+			">\n" +
+			"{{{regexReplace \"(?m)^\" commit.message.body \"> \"}}}{{/if}}"
 	if p.Template != "" {
-		var err error
-		message, err = handlebars.Render(p.Template, pipeline)
-		if err != nil {
-			return fmt.Errorf("could not render message template: %w", err)
-		}
-		message = strings.TrimSpace(message)
+		template = p.Template
 	}
-	urlstr, token := strings.TrimSpace(p.URL), strings.TrimSpace(p.Token)
+	// render
+	message, err := handlebars.Render(template, pipeline)
+	if err != nil {
+		return fmt.Errorf("could not render message template: %w", err)
+	}
 	// create client
-	cl := mattermost.NewAPIv4Client(urlstr)
-	cl.SetToken(token)
+	cl := mattermost.NewAPIv4Client(strings.TrimSpace(p.URL))
+	cl.SetToken(strings.TrimSpace(p.Token))
 	// retrieve team
 	teamName, channelName := strings.TrimSpace(p.Team), strings.TrimSpace(p.Channel)
 	logrus.WithFields(logrus.Fields{
 		"team":    teamName,
 		"channel": channelName,
-		"message": message,
+		"message": strings.TrimSpace(message),
 	}).Info("sending message")
 	team, res := cl.GetTeamByName(teamName, "")
 	switch {
