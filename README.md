@@ -18,6 +18,11 @@ steps:
       from_secret: mattermost-token
     team: dev
     channel: town-square
+      replace: |-
+        [{
+          "regexp": "\\\\[?((PRD|HR)-[0-9]+)\\\\]?",
+          "replace": "[$1](https://mycompany.atlassian.net/browse/$1)"
+        }]
     template: |-
       # {{uppercase (regexReplace "^master$" build.branch "staging")}} deployed
       **Successfully** deployed {{repo.owner}}/{{repo.name}} [`{{build.branch}}@{{truncate commit 7}}`]({{build.link}}) -> https://<URL> [[diff]({{commit.link}})]
