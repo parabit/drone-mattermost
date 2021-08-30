@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -101,12 +102,7 @@ func (p *Plugin) CreatePost(pipeline drone.Pipeline, network drone.Network) erro
 		pipeline.Commit.Message.Body = p.replacer(pipeline.Commit.Message.Body)
 	}
 	// template
-	template :=
-		"# Push `{{repo.owner}}/{{repo.name}}:{{truncate commit 7}}`\n" +
-			"Pipeline for [branch `{{commit.branch}}` by `{{commit.author}}`]({{build.link}}): **{{build.status}}**!\n" +
-			"> {{commit.message.title}}{{#if commit.message.body}}\n" +
-			">\n" +
-			"{{{regexReplace \"(?m)^\" commit.message.body \"> \"}}}{{/if}}"
+	template := string(DefaultTemplate)
 	if p.Template != "" {
 		template = p.Template
 	}
@@ -216,3 +212,8 @@ const (
 	// ErrMissingTeamOrChannel is the missing team or channel error.
 	ErrMissingTeamOrChannel Error = "missing team or channel"
 )
+
+// DefaultTemplate is the default template.
+//
+//go:embed template.tpl
+var DefaultTemplate []byte
