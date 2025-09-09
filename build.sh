@@ -8,11 +8,12 @@ pushd $SRC &> /dev/null
 
 # disable cgo
 (set -x;
+  GOOS=linux GOARCH=amd64 \
   GO111MODULE=on \
   CGO_ENABLED=0 \
     go build .
-  docker build -t kenshaw/drone-mattermost:latest .
-  docker push kenshaw/drone-mattermost:latest
+  docker build -t parabit/drone-mattermost:latest --platform linux/amd64 .
+  docker push parabit/drone-mattermost:latest
 )
 
 popd &> /dev/null

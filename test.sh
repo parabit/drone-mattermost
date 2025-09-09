@@ -13,10 +13,10 @@ enhancements for OCTO-12, CAT-567
 END
 )
 
-MATTERMOST_URL=https://mattermost.brankas.dev/ \
+MATTERMOST_URL=https://mm.parabit.ru/ \
 MATTERMOST_TOKEN="$TOKEN" \
-MATTERMOST_TEAM=dev \
-MATTERMOST_CHANNEL=town-square \
+MATTERMOST_TEAM=parabit \
+MATTERMOST_CHANNEL=release \
 MATTERMOST_REPLACE='[{"regexp": "(OCTO-[0-9]+)", "replace": "[$1](https://github.atlassian.net/browse/$1)"},{"regexp": "(CAT-[0-9]+)", "replace": "[$1](https://github.atlassian.net/browse/$1)"}]' \
 DRONE_REPO_OWNER=octocat \
 DRONE_REPO_NAME=hello-world \
